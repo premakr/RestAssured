@@ -1,0 +1,55 @@
+login:
+  email: sanjay.balamurthy@thoughtfocus.com
+  password: Test@123
+  invalidemail: fasdff
+  invalidpassword: Testspass
+
+
+createlender:
+  lendername: API
+  LenderWebsite: www.lendersite.com
+  LenderCreditAgencies: ["Experian"]
+
+loanofficers:
+  PageSize: 1
+  PageNumber: 1
+  key: all
+
+createuser:
+  CreatedByUserID: 400D816C-BF8D-4EDB-A60C-5A47344EDEA6
+  SalutationID: 1
+  FirstName: AutoAPIUser
+  LastName: AutoLastName
+  UserName: auto
+  PhoneNo: 1121132323
+  RoleID: 1
+
+updateUser:
+  LastModifiedByUserID: 400D816C-BF8D-4EDB-A60C-5A47344EDEA6
+  SalutationID: 2
+  FirstName: AutoAPIUserUpdate
+  LastName: AutoLastName
+  UserName: auto
+  PhoneNo: 1121132323
+  RoleID: 1
+  IsActive: true
+  UserID: 2
+
+laonofficertotalrecords:
+  PageSize: 20
+  PageNumber: 2
+  key: all
+
+app:
+  AppID: 1
+  App: Prequal App
+  ThemeID: 3
+  LenderID: 512A849E-F522-44F9-BA0B-5E18A7F3AEFD
+  Theme: '{"Header":{"BackgroundColor": "'
+
+saveAppPageStyle:
+  PageThemeID: 2
+  PageID: 1
+  LenderID: 512A849E-F522-44F9-BA0B-5E18A7F3AEFD
+  Style: '{"Body":{"Instructions": "<p>Consent text </p>"}}'
+  UserID: 400D816C-BF8D-4EDB-A60C-5A47344EDEA6

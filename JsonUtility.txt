@@ -1,0 +1,60 @@
+package com.creditPlus.com.creditPlus.apihelper;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+/**
+ * @author 
+ */
+public class JsonUtil {
+
+    public static String parseJson(String jsonMessage, String key) {
+        JsonParser parser = new JsonParser();
+        JsonObject o = parser.parse(jsonMessage).getAsJsonObject();
+        JsonElement jsonElement = o.get(key);
+        if (jsonElement != null) {
+            if (!jsonElement.isJsonNull()) {
+                return jsonElement.toString();
+            }
+        }
+        return null;
+
+    }
+
+    public static String parseJsonArray(String jsonMessage, String key, int counter) {
+
+        JsonParser parser = new JsonParser();
+        JsonArray jsonArray = parser.parse(jsonMessage).getAsJsonArray();
+        JsonObject jsonObject = jsonArray.get(counter).getAsJsonObject();
+        JsonElement element = jsonObject.get(key);
+        if (element != null) {
+            if (!element.isJsonNull()) {
+                String value = element.toString();
+                return value.replaceAll("\"", "");
+            }
+        }
+        return null;
+    }
+
+    public static String parseJsonArrayValue(String jsonMessage) {
+
+        JsonParser parser = new JsonParser();
+        System.out.println("json message" + jsonMessage);
+        JsonArray jsonArray = parser.parse(jsonMessage).getAsJsonArray();
+        return jsonArray.get(0).getAsString();
+
+    }
+
+    /*public static boolean isValidJson(String jsonStr) {
+        boolean isValid = false;
+        try {
+            JSONSerializer.toJSON(jsonStr);
+            isValid = true;
+        } catch (JSONException je) {
+            isValid = false;
+        }
+        return isValid;
+    }*/
+}

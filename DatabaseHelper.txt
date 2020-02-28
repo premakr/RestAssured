@@ -1,0 +1,84 @@
+package com.creditPlus.com.creditPlus.apihelper;
+
+import com.creditPlus.baseClass.BaseClassAPI;
+import com.creditPlus.helper.AutomationException;
+
+import java.util.Map;
+
+/**
+ * @author 
+ */
+
+public class DatabaseHelper extends BaseClassAPI {
+
+    private static String table;
+    private static String attribute;
+    private static String attributeValue;
+    private static Map<String, String> recordKeyValues;
+
+    public static String getExternalID(String actor) {
+
+        attribute = "ExternalID";
+
+        if (actor.equalsIgnoreCase( "lender" )) {
+            table = CPSSTables.LENDERS;
+        } else if (actor.equalsIgnoreCase( "admin" )) {
+            table = CPSSTables.USERS;
+        } else if (actor.equalsIgnoreCase( "loanOfficer" )) {
+            table = CPSSTables.LOAN_OFFICERS;
+        } else if (actor.equalsIgnoreCase( "product" )) {
+            table = CPSSTables.PRODUCT;
+        }
+
+        Map<String, String> items = CPSSDatabaseUtil.fetchTopRecord( table, attribute );
+        for (Map.Entry<String, String> entry : items.entrySet()) {
+
+            if ("ExternalID".equalsIgnoreCase( entry.getKey() )) {
+                attributeValue = entry.getValue();
+                return attributeValue;
+            }
+        }
+        throw new AutomationException( "Record does not exist " );
+    }
+
+    public static void getDatabaseResults(String[] columnsToSelect) {
+
+        recordKeyValues = CPSSDatabaseUtil.fetchTopRecord( table, columnsToSelect);
+    }
+
+    public static void getDatabaseResults(String tableName, String[] columnsToSelect) {
+
+        table = tableName;
+        recordKeyValues = CPSSDatabaseUtil.fetchTopRecord( table, columnsToSelect);
+    }
+
+    public static String getColumnValue(String columnName) {
+        return recordKeyValues.get( columnName );
+    }
+
+    public static void getDatabaseResultsBasedOn(String value, String tableName, String[] columnsToValidate) {
+
+        table = tableName;
+        if (tableName.equalsIgnoreCase( CPSSTables.USER_ROLES ))
+            attribute = "RoleTypeID";
+        else if (tableName.equalsIgnoreCase( CPSSTables.USERS ))
+            attribute = "UserName";
+        recordKeyValues = CPSSDatabaseUtil.fetchRecord( table, value, attribute,  columnsToValidate);
+    }
+
+    public static void getDatabaseResultsBasedOnID(String joinTable, String joinColumn, String[] columnsToValidate) {
+
+        recordKeyValues = CPSSDatabaseUtil.fetchRecordOnJoinCondition( table, joinTable, joinColumn, attribute,  attributeValue, columnsToValidate);
+    }
+
+    public static void getDatabaseResultsFromTables(String joinTable, String joinColumn, String[] columnsToValidate) {
+
+        recordKeyValues = CPSSDatabaseUtil.fetchRecordOnJoin( table, joinTable, joinColumn, columnsToValidate);
+    }
+
+    public static void retrieveDatabaseResults(String tableName, int[] roleIds) {
+
+        attribute = "RoleID";
+        recordKeyValues = CPSSDatabaseUtil.fetchRecord( tableName, attribute, roleIds );
+    }
+}

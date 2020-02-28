@@ -1,0 +1,123 @@
+package com.creditPlus.baseClass;
+
+import com.creditPlus.com.creditPlus.apihelper.TestDataFromYml;
+import com.creditPlus.constants.APIConstants;
+import com.creditPlus.helper.AutomationException;
+import com.creditPlus.helper.Dates;
+import org.testng.annotations.Optional;
+import org.testng.annotations.*;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.lang.reflect.Method;
+import java.util.*;
+
+import static io.restassured.RestAssured.baseURI;
+import static io.restassured.RestAssured.given;
+
+/**
+ * @author 
+ */
+
+public class BaseClassAPI {
+
+    public static Properties prop;
+    protected String loginToken;
+    private String env;
+
+    public BaseClassAPI() {
+        if (prop == null) {
+            prop = new Properties();
+        }
+        try {
+            FileInputStream fis = new FileInputStream( APIConstants.apiConfigPath);
+            prop.load(fis);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @BeforeClass
+    @Parameters({ "environment"})
+    public void fetchAuthenticationToken(@Optional("QA") String environment) throws Exception {
+
+        Map<String, Object> keyValuePair = getRequestKeyValuePairs(
+                "login.email",
+                "login.password");
+        if (environment.equalsIgnoreCase( "QA" ))
+            env = prop.getProperty( "env.qa" );
+        else if (environment.equalsIgnoreCase( "DEV" ))
+            env = prop.getProperty( "env.dev" );
+        else
+            throw new AutomationException( "Environment missing" );
+
+        baseURI = String.format("http://cpss%s.%s/cp%sauthapi/api/", env, prop.getProperty( "server" ), env);
+
+        loginToken = given()
+                .formParams(keyValuePair)
+                .when()
+                .post(APIConstants.ACCOUNT_LOGIN)
+                .then()
+                .extract()
+                .path("token")
+                .toString();
+        if (loginToken == null) {
+            throw new AutomationException("Token value not found");
+        }
+    }
+
+    @BeforeMethod
+    public void beforeTestMethod(Method testMethod){
+
+        if (testMethod.getName().startsWith( "login" ))
+            baseURI = String.format("http://cpss%s.%s/cp%sauthapi/api/", env, prop.getProperty( "server" ), env);
+        else
+            baseURI = String.format("http://cpss%s.%s/cp%sadminapi/api/", env, prop.getProperty( "server" ), env);
+    }
+
+    protected Map<String,  Object> getRequestKeyValuePairs(String ... testData) throws FileNotFoundException {
+
+        Map<String, Object> keyValuePair = new HashMap<>();
+        String value;
+
+        for (String key : testData) {
+
+            String[] inputKeyAndSubKey = key.split("\\.");
+            if (key.equalsIgnoreCase("createuser.UserName")) {
+                value = TestDataFromYml.getValue(inputKeyAndSubKey[0], inputKeyAndSubKey[1]);
+                value += Dates.generateRandomString();
+                value += "@yopmail.com";
+            } else {
+                value = TestDataFromYml.getValue(inputKeyAndSubKey[0], inputKeyAndSubKey[1]);
+            }
+            keyValuePair.put(inputKeyAndSubKey[1], value);
+        }
+        return keyValuePair;
+    }
+
+    protected List<Map> parseCsv(String response) {
+
+       List<Map> lenders = new ArrayList<>();
+       String[] lines = response.split("\r\n|\r|\n");
+       String[] header = lines[0].split(",");
+
+        for (int numberOfLines = 1; numberOfLines < lines.length; numberOfLines++) {
+
+            Map<String, Object> lenderInfo = new HashMap<>();
+            List<String> creditAgencies = new ArrayList<>();
+            for (int columns = 0; columns < header.length; columns++) {
+                String[] cells = lines[numberOfLines].split(",");
+
+                if (columns > 1 && columns < 5) {
+                    int headerIndex = 2;
+                    lenderInfo.put(header[headerIndex], creditAgencies.add(cells[columns]));
+                } else {
+                    lenderInfo.put(header[columns], cells[columns]);
+                }
+            }
+
+            lenders.add(lenderInfo);
+        }
+        return lenders;
+    }
+}

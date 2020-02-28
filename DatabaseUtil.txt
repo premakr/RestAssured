@@ -1,0 +1,158 @@
+package com.creditPlus.com.creditPlus.apihelper;
+
+import com.creditPlus.baseClass.BaseClassAPI;
+import com.creditPlus.helper.AutomationException;
+
+import java.sql.*;
+import java.util.*;
+
+/**
+ * @author shubhojit
+ */
+
+class CPSSDatabaseUtil {
+
+    private static String generateSQLStatement(String table, String[] resultColumn) {
+
+        StringBuilder columns = new StringBuilder();
+        if (resultColumn.length == 1)
+            columns = new StringBuilder( resultColumn[0] );
+
+        for (int numberOfColumns = 0; numberOfColumns < resultColumn.length && resultColumn.length > 1; numberOfColumns++) {
+
+            columns.append( resultColumn[numberOfColumns] );
+            if (numberOfColumns < resultColumn.length - 1)
+                columns.append( "," );
+        }
+
+        return "SELECT TOP 1 " + columns.toString() + " FROM " + table + ";";
+    }
+
+    static Map<String, String> fetchTopRecord(String table, String ... selectColumns) {
+
+        String sql = generateSQLStatement( table, selectColumns );
+        return getResultFromDatabase( sql );
+    }
+
+    private static String generateSQLStatement(String table, String criteriaValue, String criteria, String[] resultColumn) {
+
+        StringBuilder columns = new StringBuilder();
+        if (resultColumn.length == 1)
+            columns = new StringBuilder( resultColumn[0] );
+
+        for (int numberOfColumns = 0; numberOfColumns < resultColumn.length && resultColumn.length > 1; numberOfColumns++) {
+
+            columns.append( resultColumn[numberOfColumns] );
+            if (numberOfColumns < resultColumn.length - 1)
+                columns.append( "," );
+        }
+
+        return "SELECT TOP 1 " + columns.toString() + " FROM " + table + " WHERE " + criteria + " = " + criteriaValue + ";";
+    }
+
+    static Map<String, String> fetchRecord(String table, String whereColumn, String selectColumns, String[] columnsToValidate) {
+
+        String sql = generateSQLStatement( table, whereColumn, selectColumns, columnsToValidate );
+        return getResultFromDatabase( sql );
+    }
+
+    private static Map<String, String> getResultFromDatabase(String sql) {
+        Properties prop = BaseClassAPI.prop;
+        Connection connection;
+        Map<String, String> headerValuePairs = new HashMap<>();
+        try {
+            connection = DriverManager.getConnection( prop.getProperty( "db.url" ), prop.getProperty( "user" ), prop.getProperty( "password" ));
+
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery( sql );
+            ResultSetMetaData rsm = resultSet.getMetaData();
+
+            int columnsNumber = rsm.getColumnCount();
+
+            int rowCount = 0;
+            while (resultSet.next()) {
+                ++rowCount;
+                for (int i = 1; i <= columnsNumber; i++) {
+                    headerValuePairs.put(rsm.getColumnName(i), resultSet.getString(i));
+                }
+            }
+            connection.close();
+
+            if (rowCount == 0)
+                throw new AutomationException( "No recoreds found for query = " + sql );
+            return headerValuePairs;
+
+        } catch(Exception ex) {
+            throw new AutomationException( "DB error " + ex.getMessage() );
+        }
+    }
+
+    public static Map<String, String> fetchRecordOnJoinCondition(String table, String joinTable, String joinColumn, String attribute, String attributeValue, String[] columnsToValidate) {
+
+        String sql = generateSQLConditionalJoinStatement( table, joinTable, joinColumn, attribute, attributeValue, columnsToValidate );
+        return getResultFromDatabase( sql );
+    }
+
+    private static String generateSQLConditionalJoinStatement(String table, String joinTable, String joinColumn, String attribute, String attributeValue, String[] columnsToValidate) {
+
+        StringBuilder columns = new StringBuilder();
+        if (columnsToValidate.length == 1)
+            columns = new StringBuilder( columnsToValidate[0] );
+
+        for (int numberOfColumns = 0; numberOfColumns < columnsToValidate.length && columnsToValidate.length > 1; numberOfColumns++) {
+
+            columns.append( columnsToValidate[numberOfColumns] );
+            if (numberOfColumns < columnsToValidate.length - 1)
+                columns.append( "," );
+        }
+
+        return "SELECT TOP 1 " + columns.toString() + " FROM " + table + "" +
+                " INNER JOIN " + joinTable + " ON " + table + "." + joinColumn + " = " + joinTable + "." + joinColumn
+                + " AND " + table + "." + attribute + " = '" + attributeValue + "'";
+    }
+
+    public static Map<String, String> fetchRecordOnJoin(String table, String joinTable, String joinColumn, String[] columnsToValidate) {
+
+        String sql = generateSQLJoinStatement( table, joinTable, joinColumn, columnsToValidate );
+        return getResultFromDatabase( sql );
+    }
+
+    private static String generateSQLJoinStatement(String table, String joinTable, String joinColumn, String[] columnsToValidate) {
+
+        StringBuilder columns = new StringBuilder();
+        if (columnsToValidate.length == 1)
+            columns = new StringBuilder( columnsToValidate[0] );
+
+        for (int numberOfColumns = 0; numberOfColumns < columnsToValidate.length && columnsToValidate.length > 1; numberOfColumns++) {
+
+            columns.append( columnsToValidate[numberOfColumns] );
+            if (numberOfColumns < columnsToValidate.length - 1)
+                columns.append( "," );
+        }
+
+        return "SELECT TOP 1 " + columns.toString() + " FROM " + table + "" +
+                " INNER JOIN " + joinTable + " ON " + table + "." + joinColumn + " = " + joinTable + "." + joinColumn;
+    }
+
+    static Map<String, String> fetchRecord(String table, String column, int[] ids) {
+
+        String sql = generateSQLStatement( table, column, ids);
+        return getResultFromDatabase( sql );
+    }
+
+    private static String generateSQLStatement(String table, String column, int[] values) {
+
+        String value = "";
+        if (values.length == 1)
+            value = String.valueOf( values[0] );
+
+        for (int numberOfValues = 0; (numberOfValues < values.length) && (values.length > 1); numberOfValues++) {
+
+            value = value.concat( String.valueOf( values[numberOfValues] ) );
+            if (numberOfValues < values.length - 1)
+                value = value.concat( "," );
+        }
+
+        return "SELECT COUNT(*) FROM " + table + " WHERE " + column + " NOT IN (" + value + ")";
+    }
+}

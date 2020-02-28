@@ -1,0 +1,858 @@
+package com.creditPlus.apitestcases;
+
+import com.creditPlus.baseClass.BaseClassAPI;
+import com.creditPlus.com.creditPlus.apihelper.CPSSTables;
+import com.creditPlus.com.creditPlus.apihelper.DatabaseHelper;
+import com.creditPlus.com.creditPlus.apihelper.JsonUtil;
+import com.creditPlus.constants.APIConstants;
+import com.creditPlus.logs.Logs;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.io.FileNotFoundException;
+import java.util.Map;
+
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+
+public class APITestCases extends BaseClassAPI {
+
+	//author : 
+    @Test
+    public void loginValidation() throws FileNotFoundException {
+
+        Map<String, Object> keyValuePair = getRequestKeyValuePairs(
+                "login.email",
+                "login.password");
+        Logs.info( "Endpoint URI set = " + baseURI );
+                given()
+                        .formParams(keyValuePair)
+                        .when()
+                        .post(APIConstants.ACCOUNT_LOGIN)
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .body("userInfo.lastName", equalTo("Balamurthy"))
+                        .extract().response();
+
+        Logs.info( "Login validation passed" );
+    }
+
+    //author : 
+    @Test
+    public void getLenderByLenderId() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LENDER_BY_ID + DatabaseHelper.getExternalID("lender" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+
+        Logs.info( "Set columns to validate" );
+        String[] columnsToValidate = { "LenderID", "LenderWebsite", "IsActive", "generalEmailAddress", "notificationPreferenceID" };
+        DatabaseHelper.getDatabaseResults(columnsToValidate);
+
+        Logs.info( "Asserting columns in Database with those fields in Jason" );
+        Assert.assertEquals( JsonUtil.parseJson( response, "lenderID" ), DatabaseHelper.getColumnValue( "LenderID" ) );
+        Assert.assertEquals( JsonUtil.parseJson( response, "lenderWebsite" ), "\"" + DatabaseHelper.getColumnValue( "LenderWebsite" ) + "\"");
+//        Assert.assertEquals( JsonUtil.parseJson( response, "isActive" ), DatabaseHelper.getColumnValue( "IsActive" ) );
+        Assert.assertEquals( JsonUtil.parseJson( response, "generalEmailAddress" ), DatabaseHelper.getColumnValue( "generalEmailAddress" ) );
+        Assert.assertEquals( JsonUtil.parseJson( response, "notificationPreferenceID" ), DatabaseHelper.getColumnValue( "notificationPreferenceID" ) );
+
+        Logs.info( "GetLenderByLenderID passed" );
+    }
+
+    //author : 
+    @Test
+    public void getLoanOfficers() throws FileNotFoundException {
+
+        Map<String, Object> loanOfficerKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key"
+        );
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams(loanOfficerKeyValuePairs)
+                        .when()
+                        .get(APIConstants.GET_LOAN_OFFICER)
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "loanOfficerID", 0), "52");
+    }
+    
+    //author : 
+    @Test
+    public void getLenderLogoUrl() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LENDER_LOGO_URL + DatabaseHelper.getExternalID( "lender" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+        String fileExtensionFromAPI = response.substring(response.lastIndexOf(".") + 1, response.length() - 1);
+
+        DatabaseHelper.getDatabaseResults( new String[]{"LogoRelativePath"} );
+        String fileTypeFromDatabase = DatabaseHelper.getColumnValue( "LogoRelativePath" );
+        String fileExtensionFromDB = fileTypeFromDatabase.substring( fileTypeFromDatabase.lastIndexOf( "." ) + 1 );
+
+        Assert.assertEquals(fileExtensionFromAPI,"jpg", fileExtensionFromDB);
+        
+    }
+
+    //author : 
+    @Test
+    public void createAdminUser() throws FileNotFoundException {
+
+        Map<String, Object> keyValuePair = getRequestKeyValuePairs(
+                "createuser.CreatedByUserID",
+                "createuser.SalutationID",
+                "createuser.FirstName",
+                "createuser.LastName",
+                "createuser.UserName",
+                "createuser.PhoneNo",
+                "createuser.RoleID");
+
+        final Response response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams(keyValuePair)
+                        .when()
+                        .post(APIConstants.CREATE_USER)
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .body("message", equalTo("User created successfully."))
+                        .extract().response();
+        System.out.println("Status code = " + response.statusCode());
+        System.out.println("Response = " + response.asString());
+
+        String[] columnsToValidate = { "UserName" };
+//        DatabaseHelper.getDatabaseResultsBasedOn( keyValuePair.get( "createuser.UserName" ).toString(), CPSSTables.USERS, columnsToValidate);
+    }
+
+    //author : 
+    @Test
+    public void getUserById() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_USER_BY_ID + DatabaseHelper.getExternalID( "admin" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .body("firstName", equalTo("Jason"))
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+        String[] columnsToValidate = { "userName", "salutationID", "firstName", "middleInitial", "lastName", "phoneNo", "roleID" };
+        DatabaseHelper.getDatabaseResultsFromTables( CPSSTables.USER_INFO, "userId", columnsToValidate );
+
+        Assert.assertEquals( JsonUtil.parseJson(response, "emailAddress"), "\"" + DatabaseHelper.getColumnValue( "userName" ) + "\"" );
+        Assert.assertEquals( JsonUtil.parseJson(response, "salutationID"), DatabaseHelper.getColumnValue( "salutationID" ) );
+        Assert.assertEquals( JsonUtil.parseJson(response, "firstName"), "\"" + DatabaseHelper.getColumnValue( "firstName" ) + "\"" );
+        Assert.assertEquals( JsonUtil.parseJson(response, "middleInitial"), DatabaseHelper.getColumnValue( "middleInitial" ) );
+        Assert.assertEquals( JsonUtil.parseJson(response, "lastName"), "\"" + DatabaseHelper.getColumnValue( "lastName" ) + "\"" );
+//        Assert.assertEquals( JsonUtil.parseJson(response, "phoneNumber"), DatabaseHelper.getColumnValue( "phoneNo" ) );
+        Assert.assertEquals( JsonUtil.parseJson(response, "roleID"), DatabaseHelper.getColumnValue( "roleID" ) );
+    }
+    
+   //author : 
+    @Test
+    public void getLenders() throws FileNotFoundException {
+
+        //TODO Returns only one Lender
+        Map<String, Object> lenderKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key");
+
+        final Response response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams( lenderKeyValuePairs )
+                        .when()
+                        .get(APIConstants.GET_LENDERS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .contentType(ContentType.JSON)
+                        .extract()
+                        .response();
+        String responseValue = response.asString();
+        System.out.println("The response fetched is: "+ responseValue);
+        Assert.assertEquals(JsonUtil.parseJsonArray(response.asString(), "lenderName", 0), "30yr lender mortgage");
+       
+    
+    }
+    
+    //author : 
+    @Test
+    public void getLenderDownloads() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LENDER_DOWNLOAD)
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+
+        String[] rowCountToValidate = {"count(*)"};
+        DatabaseHelper.getDatabaseResults(CPSSTables.LENDERS, rowCountToValidate);
+
+        Assert.assertEquals( parseCsv(response).size(), Integer.parseInt( DatabaseHelper.getColumnValue( "" ) ) );
+    }
+    
+    //author : 
+    @Test
+    public void getLendersTotalRecords() throws FileNotFoundException {
+    	
+    	 Map<String, Object> loanOfficerKeyValuePairs = getRequestKeyValuePairs(
+                 "loanofficers.PageSize",
+                 "loanofficers.PageNumber",
+                 "loanofficers.key");
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams(loanOfficerKeyValuePairs)
+                        .when()
+                        .get(APIConstants.GET_LENDER_TOTAL_RECORDS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+
+        String[] rowCountToValidate = {"count(*)"};
+        DatabaseHelper.getDatabaseResults(CPSSTables.LENDERS, rowCountToValidate);
+
+        Assert.assertEquals( parseCsv(response).size(), Integer.parseInt( DatabaseHelper.getColumnValue( "" ) ) );
+    }
+    
+    //author : 
+    @Test
+    public void getLoanOfficersTotalRecords() throws FileNotFoundException {
+    	
+    	 Map<String, Object> loanOfficerKeyValuePairs = getRequestKeyValuePairs(
+                 "loanofficers.PageSize",
+                 "loanofficers.PageNumber",
+                 "loanofficers.key");
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams(loanOfficerKeyValuePairs)
+                        .when()
+                        .get(APIConstants.GET_LOAN_OFFICER_TOTAL_RECORDS + DatabaseHelper.getExternalID( "lender" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+        String[] rowCountToValidate = {"count(*)"};
+        DatabaseHelper.getDatabaseResultsBasedOnID( CPSSTables.LOAN_OFFICERS, "lenderID", rowCountToValidate );
+        Assert.assertEquals( response, DatabaseHelper.getColumnValue( "" ) );
+        //API response is wrong. It just gives the integer no. instead of response in JSON.     
+    }
+
+    //author : 
+    @Test
+    public void getLoanOfficersForProduct() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LOAN_OFFICERS_FOR_PRODUCTS + DatabaseHelper.getExternalID( "lender" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "loanOfficerName", 0), "Albertt benjaminn");
+        //TODO ProductID value in JSON response = 0
+    }
+
+    //author : 
+    @Test
+    public void getLoanOfficerByID() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LOAN_OFFICER_BY_ID + DatabaseHelper.getExternalID( "loanOfficer" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200).and()
+                        .body("loanOfficerID", equalTo(1))
+                        .body("userInfo.userID", equalTo(1))
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+    }
+    
+    //author : 
+    @Test
+    public void getUserRoles() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_USER_ROLES)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .contentType(ContentType.JSON)
+                        .extract()
+                        .response().asString();
+        String[] columnsToValidate = { "roleId", "role", "displayOrder" };
+        DatabaseHelper.getDatabaseResults( CPSSTables.USER_ROLES, columnsToValidate );
+        System.out.println("The response fetched is: "+ response);
+
+        Assert.assertEquals( JsonUtil.parseJsonArray(response, "roleId", 0), DatabaseHelper.getColumnValue( "roleId" ) );
+        Assert.assertEquals( JsonUtil.parseJsonArray(response, "role", 0), DatabaseHelper.getColumnValue( "role" ) );
+        Assert.assertEquals( JsonUtil.parseJsonArray(response, "displayOrder", 0), DatabaseHelper.getColumnValue( "displayOrder" ) );
+    }
+    
+    //author : 
+    @Test
+    public void getSecurityQuestions() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_SECURITY_QUESTIONS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .contentType(ContentType.JSON)
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+        String[] columnsToValidate = {"securityQuestionId", "securityQuestion", "isActive", "displayOrder"};
+        DatabaseHelper.getDatabaseResults( CPSSTables.SECURITY_QUESTIONS, columnsToValidate );
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "securityQuestionId", 0),
+                DatabaseHelper.getColumnValue( "securityQuestionId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "securityQuestion", 0),
+                DatabaseHelper.getColumnValue( "securityQuestion" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0),
+                DatabaseHelper.getColumnValue( "displayOrder" ));
+        // TODO Validate remaining 3 records
+    }
+    
+    //author : 
+    @Test
+    public void getTimeZones() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_TIME_ZONES)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .contentType(ContentType.JSON)
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+        String[] columnsToValidate = {"timeZoneId", "timeZone", "timeZoneCode", "displayOrder"};
+        DatabaseHelper.getDatabaseResults( CPSSTables.TIME_ZONES, columnsToValidate );
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "timeZoneId", 0),
+                DatabaseHelper.getColumnValue( "timeZoneId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "timeZone", 0),
+                DatabaseHelper.getColumnValue( "timeZone" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "timeZoneCode", 0),
+                DatabaseHelper.getColumnValue( "timeZoneCode" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0),
+                DatabaseHelper.getColumnValue( "displayOrder" ));
+        // Validate remaining 3 rows
+    }
+    
+    //author : 
+    @Test
+    public void getCreditReportAgencies() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_CRA)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .contentType(ContentType.JSON)
+                        .extract()
+                        .response().asString();
+        System.out.println("The response fetched is: "+ response);
+        String[] columnsToValidate = {"creditAgencyId", "creditAgency", "displayOrder"};
+        DatabaseHelper.getDatabaseResults( CPSSTables.CRA, columnsToValidate );
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "creditAgencyId", 0),
+                DatabaseHelper.getColumnValue( "creditAgencyId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "creditAgency", 0),
+                DatabaseHelper.getColumnValue( "creditAgency" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0),
+                DatabaseHelper.getColumnValue( "displayOrder" ));
+    }
+
+    //author: 
+    @Test
+    public void getLoanOfficerDownloads() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LOAN_OFFICER_DOWNLOADS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+        // TODO check if API is valid
+    }
+
+    //author: 
+    @Test
+    public void getAppTheme() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_APP_THEME + DatabaseHelper.getExternalID( "lender" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .body( "appID", equalTo( 1 ) )
+                        .body( "themeID", equalTo( 20 ) )
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+        String[] columnsToValidate = { "appID", "themeID" };
+        DatabaseHelper. getDatabaseResultsBasedOnID( CPSSTables.APP_THEME, "LenderID", columnsToValidate );
+
+        Assert.assertEquals( JsonUtil.parseJson(response, "appID"), DatabaseHelper.getColumnValue( "appID" ) );
+        Assert.assertEquals( JsonUtil.parseJson(response, "themeID"), DatabaseHelper.getColumnValue( "themeID" ) );
+    }
+
+    //author: 
+    @Test
+    public void getAppPageStyle() {
+
+        //TODO issue with API
+       given()
+                .auth()
+                .oauth2(loginToken)
+                .when()
+                .get(APIConstants.GET_APP_PAGE_STYLE)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body( "pageThemeID", equalTo( 0 ) )
+                .and()
+                .body( "pageID", equalTo( 1 ) )
+                .extract()
+                .response();
+    }
+
+    //author: 
+    @Test
+    public void getUserSettings() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_USER_SETTINGS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .body( "timeZone", equalTo( "Pacific Standard Time" ) )
+                        .body( "timeZoneCode", equalTo( "PST" ) )
+                        .body( "dateTimeFormat", equalTo( "dd/MM/yyyy HH:mm:ss tt" ) )
+                        .extract()
+                        .response().asString();
+        System.out.println("Response = " + response);
+    }
+
+    //author: 
+    @Test
+    public void getSalutations() {
+
+        final String response =
+                given()
+                .auth()
+                .oauth2(loginToken)
+                .when()
+                .get(APIConstants.GET_SALUTATIONS)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .extract()
+                .response().asString();
+        System.out.println("Response = " + response);
+
+        String[] columnsToValidate = { "salutationId", "salutation", "displayOrder" };
+        DatabaseHelper.getDatabaseResults( CPSSTables.SALUTATION, columnsToValidate );
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "salutationId", 0), DatabaseHelper.getColumnValue( "salutationId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "salutation1", 0), DatabaseHelper.getColumnValue( "salutation" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0), DatabaseHelper.getColumnValue( "displayOrder" ));
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "salutation1", 0), "Mr.");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "salutation1", 1), "Miss.");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "salutation1", 2), "Mrs.");
+    }
+
+    //author: 
+    @Test
+    public void getSuffixes() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_SUFFIXES)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract()
+                        .response().asString();
+        String[] columnsToValidate = { "suffixId", "suffix", "displayOrder" };
+        DatabaseHelper.getDatabaseResults( CPSSTables.SUFFIX, columnsToValidate );
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffixId", 0), DatabaseHelper.getColumnValue( "suffixId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 0), DatabaseHelper.getColumnValue( "suffix" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0), DatabaseHelper.getColumnValue( "displayOrder" ));
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 0), "Jr.");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 1), "Sr.");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 2), "I");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 3), "II");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "suffix1", 4), "III");
+    }
+
+    @Test
+    public void getLenderNotificationPreferences() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_LENDER_NOTIFICATION_PREFERENCES )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+
+        String[] columnsToValidate = { "notificationPreferenceId", "notificationTypeId", "preference", "displayOrder" };
+        DatabaseHelper.getDatabaseResults( CPSSTables.LENDER_NOTIF_PREF, columnsToValidate );
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "notificationPreferenceId", 0), DatabaseHelper.getColumnValue( "notificationPreferenceId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "notificationTypeId", 0), DatabaseHelper.getColumnValue( "notificationTypeId" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "preference", 0), DatabaseHelper.getColumnValue( "preference" ));
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "displayOrder", 0), DatabaseHelper.getColumnValue( "displayOrder" ));
+
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "preference", 0), "Loan Officer");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "preference", 1), "General Email Box");
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "preference", 2), "Both");
+    }
+
+    @Test
+    public void getProductByID() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_PRODUCT_BY_ID + DatabaseHelper.getExternalID( "product" ))
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+//                        .body( "name", equalTo( "Credit card - Cash Rewards" ) )
+                        .extract().response().asString();
+        System.out.println("Response = " + response);
+        String[] columnsToValidate = { "productInfoID", "code", "name", "description", "URL" };
+        DatabaseHelper.getDatabaseResultsBasedOnID(CPSSTables.PRODUCT_INFO, "ProductID", columnsToValidate);
+
+        Assert.assertEquals( JsonUtil.parseJson(response, "productInfoID"), DatabaseHelper.getColumnValue( "productInfoID" ) );
+        Assert.assertEquals( JsonUtil.parseJson(response, "code"), "\"" + DatabaseHelper.getColumnValue( "code" ) + "\"" );
+        Assert.assertEquals( JsonUtil.parseJson(response, "name"), "\"" + DatabaseHelper.getColumnValue( "name" ) + "\"" );
+        Assert.assertEquals( JsonUtil.parseJson(response, "description"), "\"" + DatabaseHelper.getColumnValue( "description" ) + "\"" );
+        Assert.assertEquals( JsonUtil.parseJson(response, "url"), "\"" + DatabaseHelper.getColumnValue( "URL" ) + "\"" );
+    }
+
+    @Test
+    public void getProductsByLenderID() throws FileNotFoundException {
+
+        Map<String, Object> productPageKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key"
+        );
+
+        final String response =
+            given()
+                    .auth()
+                    .oauth2(loginToken)
+                    .formParams( productPageKeyValuePairs )
+                    .when()
+                    .get(APIConstants.GET_PRODUCTS_BY_LENDER_ID)
+                    .then()
+                    .assertThat()
+                    .statusCode(200)
+                    .extract().response().asString();
+        System.out.println("Response = " + response);
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "name", 0), "Credit card - Alaska Airlines");
+    }
+
+    @Test
+    public void getProductsTotalRecords() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_PRODUCTS_TOTAL_RECORDS)
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        Assert.assertEquals( response, "15" );
+    }
+
+    @Test
+    public void getProductDownloads() {
+        //TODO Issue with API
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_PRODUCT_DOWNLOADS )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        System.out.println("Response = " + response);
+    }
+
+    @Test
+    public void getProductDownload() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_PRODUCT_DOWNLOAD )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        System.out.println("Response = " + response);
+        Assert.assertTrue( parseCsv(response).size() > 0, "No product found");
+    }
+
+    @Test
+    public void getProductsByLoanOfficerID() throws FileNotFoundException {
+
+        Map<String, Object> productPageKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key"
+        );
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams( productPageKeyValuePairs )
+                        .when()
+                        .get(APIConstants.GET_PRODUCTS_BY_LOAN_OFFICER_ID )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "productCode", 0), "15Yr fixed");
+    }
+
+    @Test
+    public void getProductsByLoanOfficerIDTotalRecords() throws FileNotFoundException {
+
+        Map<String, Object> productPageKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key"
+        );
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams( productPageKeyValuePairs )
+                        .when()
+                        .get(APIConstants.GET_PRODUCTS_BY_LOAN_OFFICER_ID_TOTAL_RECORDS )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        Assert.assertEquals(response, "6");
+    }
+
+    @Test
+    public void getUsers() throws FileNotFoundException {
+
+        Map<String, Object> productPageKeyValuePairs = getRequestKeyValuePairs(
+                "loanofficers.PageSize",
+                "loanofficers.PageNumber",
+                "loanofficers.key"
+        );
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .formParams( productPageKeyValuePairs )
+                        .when()
+                        .get(APIConstants.GET_USERS )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        System.out.println("Response = " + response);
+        Assert.assertEquals(JsonUtil.parseJsonArray(response, "emailAddress", 0), "carey@yopmail.com");
+    }
+
+    @Test
+    public void getUsersTotalRecords() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_USERS_TOTAL_RECORDS )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        int[] roleIds = { 4, 5 };
+        DatabaseHelper.retrieveDatabaseResults(CPSSTables.USER_INFO, roleIds);
+        Assert.assertEquals(response, DatabaseHelper.getColumnValue( "" ));
+    }
+
+    @Test
+    public void getUserDownload() {
+
+        final String response =
+                given()
+                        .auth()
+                        .oauth2(loginToken)
+                        .when()
+                        .get(APIConstants.GET_USER_DOWNLOAD )
+                        .then()
+                        .assertThat()
+                        .statusCode(200)
+                        .extract().response().asString();
+        int[] roleIds = { 4, 5 };
+        DatabaseHelper.retrieveDatabaseResults(CPSSTables.USER_INFO, roleIds);
+        Assert.assertEquals( parseCsv(response).size() , Integer.parseInt( DatabaseHelper.getColumnValue( "" )));
+    }
+
+    @Test
+    public void getUserPermission() {
+
+        given()
+                .auth()
+                .oauth2(loginToken)
+                .when()
+                .get(APIConstants.GET_USER_PERMISSION)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body( "userName", equalTo( "Mustak Nagaral" ) )
+                .extract().response();
+    }
+
+    @Test
+    public void appSave() throws FileNotFoundException {
+
+        Map<String, Object> appKeyValuePairs = getRequestKeyValuePairs(
+                "app.AppID",
+                "app.App",
+                "app.ThemeID",
+                "app.LenderID",
+                "app.Theme"
+        );
+
+        given()
+                .auth()
+                .oauth2(loginToken)
+                .formParams( appKeyValuePairs )
+                .when()
+                .post(APIConstants.APP_SAVE)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body( "message", equalTo( "Template updated successfully." ) )
+                .extract().response();
+    }
+
+}

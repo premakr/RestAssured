@@ -1,0 +1,46 @@
+package com.creditPlus.constants;
+
+/**
+ * @author 
+ */
+
+public class APIConstants {
+
+	public static final String apiConfigPath= "Resources/cpss-api.properties";
+	public static final String TEST_DATA = "api-resources/test-data/test_data.yml";
+	public static final String ACCOUNT_LOGIN = "account/login";
+	public static final String GET_LENDER_BY_ID = "lender/getlenderbyid/";
+	public static final String GET_LOAN_OFFICER = "loanofficer/getloanofficers/512A849E-F522-44F9-BA0B-5E18A7F3AEFD";
+	public static final String CREATE_USER = "user/create";
+	public static final String GET_LENDER_LOGO_URL = "lender/getlenderlogourl/";
+	public static final String GET_USER_BY_ID = "user/getuserbyid/";
+	public static final String GET_LENDERS = "lender/getlenders";
+	public static final String GET_LENDER_DOWNLOAD="lender/download";
+	public static final String GET_LENDER_TOTAL_RECORDS ="lender/download";
+	public static final String GET_LOAN_OFFICER_TOTAL_RECORDS="loanofficer/getloanofficerstotalrecords/";
+	public static final String GET_LOAN_OFFICERS_FOR_PRODUCTS = "loanofficer/getloanofficersforproduct/";
+	public static final String GET_LOAN_OFFICER_BY_ID = "loanofficer/getloanofficerbyid/";
+	public static final String GET_USER_ROLES="master/getuserroles/1";
+	public static final String GET_SECURITY_QUESTIONS="master/getsecurityquestions";
+	public static final String GET_TIME_ZONES = "master/gettimezones";
+	public static final String GET_CRA ="master/getcreditreportingagencies";
+	public static final String GET_LOAN_OFFICER_DOWNLOADS = "loanofficer/downloads/400D816C-BF8D-4EDB-A60C-5A47344EDEA6";
+	public static final String GET_APP_THEME = "app/getapptheme/";
+	public static final String GET_APP_PAGE_STYLE = "app/getapppagestyle/512A849E-F522-44F9-BA0B-5E18A7F3AEFD/1";
+	public static final String GET_USER_SETTINGS = "app/getusersettings/400D816C-BF8D-4EDB-A60C-5A47344EDEA6";
+	public static final String GET_SALUTATIONS = "master/getsalutations";
+	public static final String GET_SUFFIXES = "master/getsuffixes";
+	public static final String GET_LENDER_NOTIFICATION_PREFERENCES = "master/getLenderNotificationPreferences";
+	public static final String GET_PRODUCT_BY_ID = "product/getproductbyid/";
+	public static final String GET_PRODUCTS_BY_LENDER_ID = "product/getproducts/512A849E-F522-44F9-BA0B-5E18A7F3AEFD";
+	public static final String GET_PRODUCTS_TOTAL_RECORDS = "product/getproductstotalrecords/512A849E-F522-44F9-BA0B-5E18A7F3AEFD";
+	public static final String GET_PRODUCT_DOWNLOADS = "product/downloads/400D816C-BF8D-4EDB-A60C-5A47344EDEA6";
+	public static final String GET_PRODUCT_DOWNLOAD = "product/download/512A849E-F522-44F9-BA0B-5E18A7F3AEFD";
+	public static final String GET_PRODUCTS_BY_LOAN_OFFICER_ID = "productloanofficer/getproductsbyloanofficerid/5B1F8DB3-F8E8-49B0-A971-04EA07AB1EF0";
+	public static final String GET_PRODUCTS_BY_LOAN_OFFICER_ID_TOTAL_RECORDS = "productloanofficer/getproductsbyloanofficeridTotalRecords/5B1F8DB3-F8E8-49B0-A971-04EA07AB1EF0";
+	public static final String GET_USERS = "user/getusers";
+	public static final String GET_USERS_TOTAL_RECORDS = "user/getuserstotalrecords";
+	public static final String GET_USER_DOWNLOAD = "user/download";
+	public static final String GET_USER_PERMISSION = "user/getuserpermission/400D816C-BF8D-4EDB-A60C-5A47344EDEA6";
+	public static final String APP_SAVE = "app/save";
+}
